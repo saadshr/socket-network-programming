@@ -1,0 +1,8 @@
+# Produits de compilation C
+/build/
+/bin/
+/out/
+*.o
+*.obj
+*.exe
+*.pdb
