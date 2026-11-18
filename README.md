@@ -53,6 +53,18 @@ gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc/ftp -Iinclude src/common/net_io.c sr
 gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc/ftp -Iinclude src/common/net_io.c src/ftp/ftp_common.c src/ftp/ftp_client.c -o build/ftp_client.exe -lws2_32
 ```
 
+Pour compiler automatiquement les quatre programmes :
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\build.ps1
+```
+
+Pour compiler puis rejouer automatiquement la régression chat et la validation FTP :
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test.ps1
+```
+
 ## Exécution PowerShell
 
 Terminal 1 :
@@ -115,12 +127,16 @@ socket-network-programming/
 ├── ftp_root/.gitkeep
 ├── tests/README.md
 ├── tests/ftp_validation.ps1
+├── scripts/build.ps1
+├── scripts/test.ps1
 └── docs/
     ├── architecture.md
     ├── protocol.md
     ├── demo.md
     ├── faq.md
-    └── screenshots/README.md
+    ├── screenshots/README.md
+    ├── project-guide.md
+    └── oral-presentation.md
 ```
 
 ## Documentation
@@ -135,6 +151,8 @@ socket-network-programming/
 - [Protocole FTP](docs/ftp-protocol.md)
 - [Démonstration FTP en cinq minutes](docs/ftp-demo.md)
 - [Tests FTP](docs/ftp-tests.md)
+- [Guide pédagogique complet](docs/project-guide.md)
+- [Présentation orale et questions/réponses](docs/oral-presentation.md)
 
 ## Limites connues
 
@@ -149,15 +167,6 @@ Limites FTP : le serveur est mono-session séquentiel, les transferts sont limit
 
 Les résultats détaillés de la dernière validation réelle sont dans [tests/validation.md](tests/validation.md). Aucune capture PNG authentique n'a pu être produite dans la session graphique disponible ; aucune image n'est donc intégrée ici.
 
-## Préparation des commits
+## Livraison Git
 
-Les changements ne sont pas commités. Après accord du binôme :
-
-```bash
-git add include/net_io.h src/common/net_io.c src/client/chat_client.c src/server/chat_server.c
-git commit -m "feat(chat): implement TCP chat client and server"
-git add README.md docs tests src/ftp
-git commit -m "docs(chat): document architecture protocol and demo"
-```
-
-Ne lancer ces commandes qu'après relecture et accord. Les prochains commits FTP devront être séparés du chat si une nouvelle évolution est nécessaire.
+Le chat et le FTP sont déjà commités et poussés sur `origin/main`. Vérifier l'état local avec `git status --short --branch` et l'historique avec `git log -5 --oneline`. Les prochaines évolutions FTP devront rester séparées du chat.
