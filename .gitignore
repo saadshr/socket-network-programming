@@ -6,3 +6,10 @@
 *.obj
 *.exe
 *.pdb
+
+# Journaux et sorties temporaires de démonstration
+*.log
+*.tmp
+server-test.err
+server-test.log
+client-test.log
