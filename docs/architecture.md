@@ -1,69 +1,75 @@
 # Architecture de SocketHub-C
 
-## Périmètre
+## Deux services indépendants
 
-Cette version contient un vertical slice complet mais minimal du chat TCP local. Deux processus indépendants sont lancés : `chat_server.exe` écoute sur `127.0.0.1:5000`, tandis que `chat_client.exe` s'y connecte et échange des lignes.
+Le projet contient deux vertical slices C natifs qui ne partagent pas leur port :
 
-Le futur FTP sera isolé dans `src/ftp/`. Il n'existe encore aucun serveur FTP, client FTP, commande FTP ou connexion de données dans le code actuel.
+- le chat écoute sur `127.0.0.1:5000` et utilise `src/common/net_io.c` ;
+- le FTP écoute sur `127.0.0.1:2121`, utilise `src/ftp/` et limite ses fichiers à `ftp_root/`.
 
-## Rôle exact des fichiers
+Le chat existant n'est pas modifié par le FTP.
 
-| Fichier | Rôle |
+## Rôle exact des fichiers FTP
+
+| Fichier | Responsabilité |
 |---|---|
-| `include/net_io.h` | Déclare `NET_LINE_BUFFER_SIZE`, `line_reader_t`, `send_all` et `recv_line`. |
-| `src/common/net_io.c` | Implémente l'envoi complet et la lecture de lignes depuis un flux TCP. |
-| `src/server/chat_server.c` | Initialise WinSock2, crée le socket serveur, configure `SO_REUSEADDR`, fait `bind`, `listen`, `accept`, traite les messages et nettoie. |
-| `src/client/chat_client.c` | Initialise WinSock2, fait `connect`, lit l'entrée, ajoute `\n`, attend la réponse et nettoie. |
-| `src/ftp/README.md` | Emplacement FTP futur ; aucune implémentation. |
-| `tests/README.md` | Périmètre de test actuel. |
+| `src/ftp/ftp_common.h` | Constantes de ports/tampons et prototypes partagés par le client et le serveur. |
+| `src/ftp/ftp_common.c` | Encadrement des lignes de contrôle, parsing PASV, connexion de données et transferts binaires par blocs. |
+| `src/ftp/ftp_server.c` | Serveur FTP, authentification, commandes, socket PASV, LIST et sandbox Windows. |
+| `src/ftp/ftp_client.c` | Client terminal avec menu, lecture des réponses multi-lignes, PASV, STOR et RETR. |
+| `ftp_root/.gitkeep` | Dossier racine autorisé du serveur ; les fichiers de démonstration restent locaux et ignorés. |
 
-## Vue d'ensemble
+Les fichiers chat sont décrits dans l'architecture TCP existante : `include/net_io.h`, `src/common/net_io.c`, `src/client/chat_client.c` et `src/server/chat_server.c`.
+
+## Flux FTP
 
 ```mermaid
 flowchart LR
-    U[Utilisateur PowerShell] --> C[chat_client.exe]
-    C -->|TCP 127.0.0.1:5000| S[chat_server.exe]
-    S -->|ligne de réponse| C
-    C -.-> N[src/common/net_io.c + include/net_io.h]
-    S -.-> N
-    F[FTP futur] -.-> D[src/ftp/]
+    U[Étudiant dans PowerShell] --> C[ftp_client.exe]
+    C -->|contrôle TCP 127.0.0.1:2121| S[ftp_server.exe]
+    S -->|227 port passif| C
+    C -->|connexion TCP de données| D[listener PASV du serveur]
+    D -->|LIST / RETR / STOR| C
+    S --> R[ftp_root sandboxé]
+    R -.-> X[aucun accès aux chemins hors root]
 ```
 
-## Cycle des sockets
+## Cycle réseau d'une opération
 
 ```mermaid
 sequenceDiagram
-    participant S as chat_server.exe
-    participant C as chat_client.exe
-    S->>S: WSAStartup
-    S->>S: socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
-    S->>S: bind(127.0.0.1:5000)
-    S->>S: listen(listener, 1)
-    C->>C: WSAStartup + socket
-    C->>S: connect(127.0.0.1:5000)
-    S->>S: accept()
-    loop messages jusqu'à /quit ou déconnexion
-        C->>S: send_all("message\n")
-        S->>S: recv_line()
-        S-->>C: send_all("Serveur: reçu -> ...\n")
-    end
-    S->>S: closesocket + WSACleanup
-    C->>C: closesocket + WSACleanup
+    participant C as Client FTP
+    participant S as Contrôle FTP
+    participant D as Données PASV
+    participant F as ftp_root
+    C->>S: connect 127.0.0.1:2121
+    S-->>C: 220 ready
+    C->>S: USER / PASS
+    S-->>C: 331 / 230
+    C->>S: PASV
+    S-->>C: 227 (h1,h2,h3,h4,p1,p2)
+    C->>D: connect port p1*256+p2
+    C->>S: LIST, RETR ou STOR
+    S-->>C: 150 ouverture data
+    S->>F: vérifier le chemin dans ftp_root
+    D-->>C: listing ou octets binaires
+    C->>D: fermeture de la connexion data
+    S-->>C: 226 transfert terminé
 ```
 
-1. `WSAStartup` active WinSock2 dans chaque processus.
-2. `socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)` crée un socket TCP IPv4.
-3. Le serveur remplit `sockaddr_in`, convertit le port avec `htons`, puis appelle `bind` sur `127.0.0.1:5000`.
-4. `listen` transforme le socket en socket d'écoute.
-5. `accept` retourne un socket dédié au client ; il est distinct du socket d'écoute.
-6. Le client appelle `connect` avec la même adresse et le même port.
-7. Les deux côtés utilisent `send` via `send_all` et `recv` via `recv_line`.
-8. `recv == 0` signifie déconnexion propre ; `SOCKET_ERROR` indique une erreur consultable avec `WSAGetLastError`.
-9. Chaque socket est fermé par `closesocket`, puis WinSock2 par `WSACleanup`.
+## Cycle WinSock2
 
-## Compilation
+Pour le contrôle comme pour les données, le programme appelle `WSAStartup`, crée un socket TCP avec `socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)`, vérifie les retours de `bind`, `listen`, `accept`, `connect`, `send` et `recv`, puis ferme chaque socket avec `closesocket` avant `WSACleanup`.
+
+Le serveur crée d'abord le socket de contrôle avec `bind`/`listen`. `accept` retourne une socket dédiée au client. Lors de `PASV`, un second socket est lié au port 0 ; Windows choisit un port libre. `getsockname` permet de communiquer ce port au client. Le client ouvre alors une seconde connexion avec `connect`.
+
+## Sécurité des fichiers
+
+Le serveur convertit le chemin virtuel UTF-8 en chemin Windows relatif, refuse les racines, les lettres de lecteur, `..` et les composants invalides. Chaque composant existant est contrôlé avec `GetFileAttributesW`; les `FILE_ATTRIBUTE_REPARSE_POINT` sont refusés. `STOR` écrit d'abord dans un fichier temporaire dans le dossier parent, puis `MoveFileExW` valide le fichier sans remplacer une destination existante.
+
+## Compilation FTP
 
 ```bash
-gcc -Wall -Wextra -Wpedantic -std=c11 -Iinclude src/common/net_io.c src/server/chat_server.c -o build/chat_server.exe -lws2_32
-gcc -Wall -Wextra -Wpedantic -std=c11 -Iinclude src/common/net_io.c src/client/chat_client.c -o build/chat_client.exe -lws2_32
+gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc/ftp -Iinclude src/common/net_io.c src/ftp/ftp_common.c src/ftp/ftp_server.c -o build/ftp_server.exe -lws2_32
+gcc -Wall -Wextra -Wpedantic -std=c11 -Isrc/ftp -Iinclude src/common/net_io.c src/ftp/ftp_common.c src/ftp/ftp_client.c -o build/ftp_client.exe -lws2_32
 ```

@@ -28,7 +28,7 @@ TCP est un flux : un message peut être fragmenté ou plusieurs messages regroup
 WinSock2 est l'API réseau Windows utilisée ici. Chaque processus appelle `WSAStartup` avant les sockets et `WSACleanup` à la fin.
 
 ## Différence entre chat et FTP ?
-Le chat actuel échange des lignes sur une seule connexion TCP. FTP utilise un protocole de commandes/réponses, une connexion de contrôle et une connexion de données séparée, notamment en mode passif.
+Le chat échange des lignes sur une connexion TCP unique. FTP utilise des commandes/réponses sur une connexion de contrôle et une connexion de données séparée en mode passif.
 
 ## FTP fonctionne-t-il déjà ?
-Non. `USER`, `PASS`, `PASV`, `LIST`, `RETR`, `STOR` et `QUIT` sont des fonctionnalités futures et non développées dans cette version.
+Oui, le serveur et le client C fonctionnent sur `127.0.0.1:2121` pour `USER`, `PASS`, `SYST`, `FEAT`, `TYPE I`, `PWD`, `PASV`, `LIST`, `RETR`, `STOR`, `NOOP` et `QUIT`. FTPS/TLS et le mode actif restent hors périmètre.

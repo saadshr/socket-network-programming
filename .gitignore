@@ -13,3 +13,7 @@
 server-test.err
 server-test.log
 client-test.log
+
+# Données FTP générées localement ; conserver seulement le marqueur du dossier
+/ftp_root/*
+!/ftp_root/.gitkeep
