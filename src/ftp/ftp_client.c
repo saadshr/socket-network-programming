@@ -61,7 +61,11 @@ static int read_response(SOCKET control, line_reader_t *reader, int *code_out)
 static int send_command(SOCKET control, line_reader_t *reader,
                         const char *command, int *code_out)
 {
-    printf("--> %s\n", command);
+    if (strncmp(command, "PASS ", 5) == 0) {
+        printf("--> PASS [masqué]\n");
+    } else {
+        printf("--> %s\n", command);
+    }
     if (ftp_send_line(control, command) != 0 || read_response(control, reader, code_out) != 0) {
         print_wsa_error("commande FTP");
         return -1;

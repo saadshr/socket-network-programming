@@ -29,6 +29,17 @@ static int send_reply(SOCKET control, const char *reply)
     return ftp_send_line(control, reply);
 }
 
+static void log_command(const char *command, const char *argument)
+{
+    if (strcmp(command, "PASS") == 0) {
+        printf("C -> S: PASS [masqué]\n");
+    } else if (*argument != '\0') {
+        printf("C -> S: %s %s\n", command, argument);
+    } else {
+        printf("C -> S: %s\n", command);
+    }
+}
+
 static int utf8_to_wide(const char *input, WCHAR *output, size_t capacity)
 {
     int converted = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input, -1,
@@ -272,7 +283,7 @@ static int handle_session(SOCKET control, const ftp_sandbox_t *sandbox,
                 *p = (char)(*p - 'a' + 'A');
             }
         }
-        printf("C -> S: %s %s\n", command, argument);
+        log_command(command, argument);
 
         if (strcmp(command, "USER") == 0) {
             strncpy_s(username, sizeof(username), argument, _TRUNCATE);
