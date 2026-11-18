@@ -25,11 +25,11 @@ Le chat utilise `127.0.0.1:5000`. Le FTP utilise `127.0.0.1:2121`, une connexion
 - upload temporaire puis validation par déplacement sans écrasement d'un fichier existant ;
 - compatibilité vérifiée avec `curl.exe`.
 
-Le serveur accepte un client par exécution et se termine après la session. Il faut le relancer pour une nouvelle démonstration.
+Le serveur de chat accepte un client par exécution et se termine après la session. Le serveur FTP traite également une session de contrôle à la fois ; il faut relancer le programme concerné pour une nouvelle démonstration.
 
 ## Fonctionnalités FTP hors périmètre actuel
 
-Le FTP n'est pas chiffré : il est volontairement limité à `127.0.0.1`. FTPS/TLS, comptes multiples et mode actif ne sont pas implémentés. Voir [src/ftp/README.md](src/ftp/README.md).
+Le FTP n'est pas chiffré : il est volontairement limité à `127.0.0.1`. FTPS/TLS, comptes multiples et mode actif ne sont pas implémentés. Les explications sont regroupées dans [guide-binome.md](docs/guide-binome.md).
 
 ## Technologies et prérequis
 
@@ -122,41 +122,27 @@ socket-network-programming/
 │   ├── ftp_common.c
 │   ├── ftp_common.h
 │   ├── ftp_client.c
-│   ├── ftp_server.c
-│   └── README.md
+│   └── ftp_server.c
 ├── ftp_root/.gitkeep
-├── tests/README.md
 ├── tests/ftp_validation.ps1
 ├── scripts/build.ps1
 ├── scripts/test.ps1
 └── docs/
     ├── architecture.md
-    ├── protocol.md
-    ├── demo.md
-    ├── faq.md
-    ├── screenshots/README.md
-    ├── project-guide.md
-    └── oral-presentation.md
+    ├── guide-binome.md
+    └── demo-orale.md
 ```
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
-- [Protocole TCP](docs/protocol.md)
-- [Guide de démonstration](docs/demo.md)
-- [FAQ](docs/faq.md)
-- [Captures à réaliser](docs/screenshots/README.md)
-- [Résultats de validation](tests/validation.md)
-- [Guide FTP](docs/ftp-guide.md)
-- [Protocole FTP](docs/ftp-protocol.md)
-- [Démonstration FTP en cinq minutes](docs/ftp-demo.md)
-- [Tests FTP](docs/ftp-tests.md)
-- [Guide pédagogique complet](docs/project-guide.md)
-- [Présentation orale et questions/réponses](docs/oral-presentation.md)
+- [Guide pédagogique du binôme](docs/guide-binome.md)
+- [Démonstration et présentation orale](docs/demo-orale.md)
+- [Résultats de validation TCP et FTP](tests/validation.md)
 
 ## Limites connues
 
-- un seul client par exécution du serveur ;
+- une seule session par exécution de chaque serveur ;
 - accusé de réception simple, pas encore de chat multi-client ;
 - lignes limitées par un tampon de 4096 octets ;
 - aucune authentification ni chiffrement ;
@@ -165,8 +151,8 @@ socket-network-programming/
 
 Limites FTP : le serveur est mono-session séquentiel, les transferts sont limités au mode passif, le service n'est pas chiffré et le mot de passe doit être fourni dans l'environnement du processus serveur.
 
-Les résultats détaillés de la dernière validation réelle sont dans [tests/validation.md](tests/validation.md). Aucune capture PNG authentique n'a pu être produite dans la session graphique disponible ; aucune image n'est donc intégrée ici.
+Les résultats détaillés de la dernière validation réelle sont dans [tests/validation.md](tests/validation.md). Aucune capture PNG n'est requise pour reproduire la démonstration : les preuves textuelles réelles sont conservées dans ce fichier.
 
 ## Livraison Git
 
-Le chat et le FTP sont déjà commités et poussés sur `origin/main`. Vérifier l'état local avec `git status --short --branch` et l'historique avec `git log -5 --oneline`. Les prochaines évolutions FTP devront rester séparées du chat.
+Le chat et le FTP sont versionnés sur `origin/main`. Vérifier l'état local avec `git status --short --branch` et l'historique avec `git log -5 --oneline`.

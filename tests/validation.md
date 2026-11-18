@@ -1,4 +1,4 @@
-# Validation TCP du 18 novembre 2026
+# Validation TCP et FTP du 18 novembre 2026
 
 Cette note conserve les résultats d'une exécution réelle sur Windows avec GCC MSYS2 UCRT64. Les exécutables ont été recompilés avant les scénarios et les processus serveur créés par le harnais ont été arrêtés/nettoyés à la fin de chaque scénario.
 
@@ -26,8 +26,32 @@ Les scénarios utilisent uniquement des messages de test neutres et ne contienne
 
 ## Captures d'écran
 
-Aucune capture PNG n'a été créée. Les fenêtres terminal lancées pour la tentative graphique n'ont pas été exposées dans la session Windows contrôlable ; aucune capture authentique n'était donc disponible. Voir [docs/screenshots/README.md](../docs/screenshots/README.md) pour la liste des captures à prendre manuellement.
+Aucune capture PNG n'est suivie dans le dépôt. Les preuves textuelles ci-dessus sont suffisantes pour reproduire et vérifier les scénarios sans inventer d'image.
 
 ## Reproduction
 
-La démonstration interactive est décrite dans [docs/demo.md](../docs/demo.md). Le scénario de cadrage nécessite un client TCP de test capable d'envoyer des fragments ; il ne constitue pas une nouvelle fonctionnalité du programme de chat.
+## Validation FTP
+
+La même exécution a compilé les quatre programmes avec `-Wall -Wextra -Wpedantic -std=c11 -lws2_32`, puis a lancé les scénarios FTP sous Windows avec `curl.exe 8.22.0`. Les processus et les fichiers temporaires ont été nettoyés.
+
+| Scénario | Résultat | Preuve observée |
+|---|---|---|
+| Authentification et commandes de contrôle | PASS | Codes `331, 230, 215, 211, 200, 257, 200`. |
+| `PASV` + `LIST` | PASS | `150` puis `226`, contenu du sandbox visible. |
+| `STOR`/`RETR` texte | PASS | Transfert complet et contenu identique. |
+| `STOR`/`RETR` binaire | PASS | Hash SHA-256 téléchargé identique à l'original. |
+| Fichier inexistant, chemin absolu, `../` | PASS | Réponses `550`. |
+| Reparse point/junction | PASS | Réponse `550`, sortie du sandbox refusée. |
+| Écrasement existant | PASS | Réponse `550`. |
+| Identifiants invalides | PASS | Codes `331, 530, 221`. |
+| Commande inconnue | PASS | Code `502`. |
+| Client FTP C | PASS | Menu, upload/download, code de sortie 0. |
+| `curl.exe` externe | PASS | Listing en mode passif, code 0. |
+
+Les valeurs d'identifiants sont injectées uniquement dans l'environnement du processus de test. Aucun mot de passe réel n'est enregistré dans Git. La batterie complète se rejoue avec :
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test.ps1
+```
+
+La démonstration humaine et le script oral sont décrits dans [demo-orale.md](../docs/demo-orale.md). L'explication de l'architecture et du code est dans [architecture.md](../docs/architecture.md) et [guide-binome.md](../docs/guide-binome.md).
